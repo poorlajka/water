@@ -22,12 +22,9 @@ pub enum Token<'a> {
     Type,
 
     #[token("print")]
-    Type,
+    Print,
 
     #[token("interface")]
-    Interface,
-
-    #[token("print")]
     Interface,
 
     #[token("\n")]
@@ -57,6 +54,19 @@ pub enum Token<'a> {
     Minus,
     #[token("*")]
     Star,
+
+    #[token("(")]
+    Lparen,
+
+    #[token(")")]
+    Rparen,
+
+    #[token("[")]
+    Lbracket,
+
+    #[token("]")]
+    Rbracket,
+
     #[token("/")]
     Slash,
 

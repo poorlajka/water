@@ -2,9 +2,13 @@
 mod lexer;
 mod parser;
 mod compiler;
+mod vm;
 
 use crate::lexer::{lang_lexer, lang_token};
 use crate::parser::{lang_parser};
+use crate::compiler::{lang_compiler};
+use crate::vm::{lang_vm};
+
 use std::fs;
 
 fn main () {
@@ -42,21 +46,26 @@ fn main () {
         errors,
     } = lang_parser::parse(&tokens);
 
-    println!("{:?}", ast);
-
     /*
     if !errors.is_empty() {
         for error in errors {
             println!("{:?}", error);
         }
-        return;
     }
         */
 
-    /*
-        Check ast
-         for token in tokens {
-        println!("{:?}", token);
-    }
+    //println!("{:?}", ast);
+
+    /*  
+        Compile AST to bytecode
     */
+    let lang_compiler::CompilerArtifacts {
+        bytecode,
+        errors,
+    } = lang_compiler::compile(&ast);
+
+    /*  
+        Execute bytecode
+    */
+    let exit_status = lang_vm::exec(&bytecode);
 }

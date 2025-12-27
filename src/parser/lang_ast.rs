@@ -30,6 +30,7 @@ pub enum Statement {
     Assignment(Assignment),
     Conditional(Conditional),
     Loop(Loop),
+    Print(Symbol),
     Return(Return),
 }
 
@@ -93,6 +94,7 @@ pub enum BinaryOperator {
     Subtraction,
     Division,
     Multiplication,
+    Mod,
 }
 
 #[derive(Debug)]

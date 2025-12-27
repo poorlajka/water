@@ -43,6 +43,18 @@ fn parse_function_body (tokens: &Vec<Token>, mut curr_token: usize)
                 function_body.push(lang_ast::Statement::Assignment(assignment));
                 
             }
+            Token::Print => {
+                curr_token += 1;
+                if let Token::Identifier(identifier) = &tokens[curr_token] {
+                    function_body.push(lang_ast::Statement::Print(
+                        lang_ast::Symbol { name: identifier.to_string() },
+                    ));
+                }
+                else {
+                    // Parser error
+                }
+                curr_token += 1;
+            }
             _ => {
                 curr_token+=1;
             }
