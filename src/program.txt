@@ -1,3 +1,4 @@
 let k = 444
 let m = 43
-print k
+let o = 99
+print o

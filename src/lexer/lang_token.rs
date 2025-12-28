@@ -79,6 +79,10 @@ pub enum Token<'a> {
 
     Indent,
     Dedent,
+
+    Error,
+
+    Eof,
 }
 
 #[derive(Debug, PartialEq, Clone, Default)]

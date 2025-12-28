@@ -37,6 +37,7 @@ pub enum Statement {
 #[derive(Debug)]
 pub enum Expression {
     Constant(Constant),
+    Variable(Symbol),
     FunctionCall,
     BinaryExpression(BinaryExpression),
 }

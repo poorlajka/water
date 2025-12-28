@@ -1,13 +1,40 @@
 use crate::lexer::lang_token::Token;
 use crate::parser::lang_ast;
 
+use chumsky::{
+    input::{Stream, ValueInput},
+    prelude::*,
+};
+
+
 pub struct ParserArtifacts {
     pub ast: lang_ast::AST,
     pub errors: i32,
 }
 
+pub fn parser<'tokens, 'src: 'tokens, I>(
+) -> impl Parser<'tokens, I, lang_ast::AST, extra::Err<Rich<'tokens, Token<'src>>>>
+where
+    I: ValueInput<'tokens, Token = Token<'src>, Span = SimpleSpan>,
+{
+    any()
+        .map(|s| {
+            lang_ast::AST {
+                main: lang_ast::Function {
+                    function_decl: lang_ast::FunctionDecl {
+                        name: lang_ast::Symbol { name: "main".to_string() },
+                        inputs: vec![],
+                        outputs: vec![],
+                    },
+                    body: vec![],
+                }
+            }
+        }).boxed()
+}
+/*
 pub fn parse (tokens: &Vec<Token>) -> ParserArtifacts {
 
+    
     let mut ast = lang_ast::AST {
         main: lang_ast::Function {
             function_decl: lang_ast::FunctionDecl {
@@ -15,7 +42,7 @@ pub fn parse (tokens: &Vec<Token>) -> ParserArtifacts {
                 inputs: vec![],
                 outputs: vec![],
             },
-            body: parse_function_body(tokens, 0).0,
+            body: function().,
         }
     };
 
@@ -24,6 +51,27 @@ pub fn parse (tokens: &Vec<Token>) -> ParserArtifacts {
         errors: 5,
     }
 }
+
+fn function<'a>() -> Parser<'a, Function> {
+    function_decl()
+        .then(function_body())
+        .map(|(function_decl, function_body)| Function { function_decl, function_body })
+        .boxed()
+}
+
+fn function_body<'a>() -> Parser<'a, Vec<Statement> {
+    statement()
+        .repeated()
+        .delimited_by(just(Token::LBrace), just(Token::RBrace))
+        .boxed()
+}
+
+fn statement<'a>() -> Parser<'a, Statement> {
+
+}
+*/
+
+/*
 
 fn parse_function_body (tokens: &Vec<Token>, mut curr_token: usize) 
 -> (Vec<lang_ast::Statement>, usize) {
@@ -142,6 +190,75 @@ fn parse_assignment_rhs (tokens: &Vec<Token>, mut curr_token:  usize)
 fn parse_expression (tokens: &Vec<Token>, mut curr_token:  usize) 
 -> (lang_ast::Expression, usize) {
     
+    let mut sub_expressions = Vec::new();
+
+    use lang_lexer::Token as Token;
+    while !matches!(tokens[curr_token], Token::Newline) {
+        match tokens[curr_token] {
+
+            /* 
+                Identifier(expression)
+                | identifier[expression]
+                | identifier
+            */
+            Token::Identifier(identifier) => {
+                /* 
+                    Function call
+                */
+                if matches!(tokens[curr_token+1], Token::Lparen) {
+                    let (sub_expression, new_curr_token) = parse_fn_call(tokens, curr_token);
+                    curr_token = new_curr_token;
+                    sub_expressions.push(sub_expression);
+                }
+                /* 
+                    Container indexing
+                */
+                else if matches!(tokens[curr_token+1],) {
+                    let (sub_expression, new_curr_token) = parse_index(tokens, curr_token);
+                    curr_token = new_curr_token;
+                    sub_expressions.push(sub_expression);
+                }
+                /* 
+                    Variable
+                */
+                else {
+                    sub_expressions.push(lang_ast::Variable(identifier));
+                    curr_token+=1;
+                }
+            }
+            Token::Integer(integer) => {
+                sub_expressions.push(
+                    lang_ast::Expression::Constant(
+                        lang_ast::Constant::Integer(integer)
+                    )
+                );
+                curr_token+=1;
+            }
+            Token::Float(float) => {
+                sub_expressions.push(
+                    lang_ast::Expression::Constant(
+                        lang_ast::Constant::Float(float)
+                    )
+                );
+                curr_token+=1;
+            }
+
+            Token::Plus => {
+                let rhs, new_curr_token = parse_expression
+                curr_token
+                return lang_ast::BinaryExpression {
+                    lhs: sub_expression[0],
+                    rhs
+                }
+            }
+
+            _ => {
+
+            }
+        }
+    }
+    
+
     let expression = match tokens[curr_token] {
         Token::Integer(integer) => {
             lang_ast::Expression::Constant(
@@ -157,3 +274,4 @@ fn parse_expression (tokens: &Vec<Token>, mut curr_token:  usize)
     curr_token += 1;
     (expression, curr_token)
 }
+*/

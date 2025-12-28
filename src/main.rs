@@ -10,6 +10,7 @@ use crate::compiler::{lang_compiler};
 use crate::vm::{lang_vm};
 
 use std::fs;
+use chumsky::Parser;
 
 fn main () {
 
@@ -27,25 +28,21 @@ fn main () {
     /*
         Tokenize code
     */
-    let lang_lexer::LexerArtifacts {
-        tokens,
-        errors,
-    } = lang_lexer::tokenize(&code);
+    let tokens = lang_lexer::tokenize(&code);
 
-    if !errors.is_empty() {
-        for error in errors {
-            println!("{:?}", error);
-        }
+    for token in tokens {
+        println!("{:?}", token);
     }
-   
+    
+    lang_parser::parser().parse(tokens);
     /*
         Parse tokens
-    */
+    
     let lang_parser::ParserArtifacts {
         ast,
         errors,
     } = lang_parser::parse(&tokens);
-
+    */
     /*
     if !errors.is_empty() {
         for error in errors {
@@ -58,14 +55,14 @@ fn main () {
 
     /*  
         Compile AST to bytecode
-    */
+    
     let lang_compiler::CompilerArtifacts {
         bytecode,
         errors,
     } = lang_compiler::compile(&ast);
-
+*/
     /*  
         Execute bytecode
     */
-    let exit_status = lang_vm::exec(&bytecode);
+    //let exit_status = lang_vm::exec(&bytecode);
 }

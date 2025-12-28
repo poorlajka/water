@@ -1,5 +1,7 @@
 use crate::lang_token::{Token, LexingError};
-use logos::Logos;
+use logos::{Logos, Span};
+use chumsky::span::{SimpleSpan};
+
 
 fn count_columns(s: &str) -> usize {
     let mut column = 0;
@@ -18,20 +20,20 @@ pub struct LexerArtifacts<'a> {
     pub errors: Vec<LexingError>,
 }
 
-pub fn tokenize (code: &str) -> LexerArtifacts {
+pub fn tokenize (code: &str) -> Vec<(Token, SimpleSpan)> {
     let mut lexer_artifacts = LexerArtifacts {
         tokens: Vec::new(),
         errors: Vec::new(),
     };
-
-    let mut lexer = Token::lexer(code);
+    let mut tokens = Vec::new();
+    let mut lexer = Token::lexer(code).spanned();
     
     let mut old_indent = 0;
 
-    while let Some(token) = lexer.next() {
+    while let Some((token, span)) = lexer.next() {
         match token.clone() {
-            Ok(token) => lexer_artifacts.tokens.push(token),
-            Err(error) => lexer_artifacts.errors.push(error),
+            Ok(token) => tokens.push((token, span.clone().into())),
+            Err(error) => tokens.push((Token::Error, span.clone().into())),
         }
 
         if let Ok(Token::Newline) = token {
@@ -41,14 +43,14 @@ pub fn tokenize (code: &str) -> LexerArtifacts {
             let new_indent = count_columns(&leading_ws);
             
             if new_indent > old_indent {
-                lexer_artifacts.tokens.push(Token::Indent);
+                tokens.push((Token::Indent, span.clone().into()));
             }
             else if new_indent < old_indent {
-                lexer_artifacts.tokens.push(Token::Dedent);
+                tokens.push((Token::Dedent, span.clone().into()));
             }
             old_indent = new_indent;
         }
     }
 
-    lexer_artifacts
+    tokens
 }

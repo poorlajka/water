@@ -123,6 +123,9 @@ pub fn compile_expression (expression: &lang_ast::Expression, symbol_table: &mut
         Expression::BinaryExpression(binary_expression) => {
             bytecode.append(&mut compile_binary_expression(binary_expression, symbol_table));
         },
+        _ => {
+            
+        }
     }
 
     bytecode
