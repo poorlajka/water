@@ -6,17 +6,104 @@ use chumsky::{
     prelude::*,
 };
 
+use chumsky::input::IterInput;
+
 
 pub struct ParserArtifacts {
     pub ast: lang_ast::AST,
     pub errors: i32,
 }
 
+/*
+    Holy shit there has to be a better way of writing this right????
+*/
 pub fn parser<'tokens, 'src: 'tokens, I>(
-) -> impl Parser<'tokens, I, lang_ast::AST, extra::Err<Rich<'tokens, Token<'src>>>>
+) -> impl Parser<
+    'tokens,
+    I,
+    lang_ast::AST,
+    extra::Err<Rich<'tokens, (Token<'src>, SimpleSpan)>>
+>
 where
-    I: ValueInput<'tokens, Token = Token<'src>, Span = SimpleSpan>,
+    I: ValueInput<
+        'tokens,
+        Token = (Token<'src>, SimpleSpan),
+        Span = SimpleSpan,
+    >,
 {
+
+    /*
+        <unary_operator> ::= "-" | "not"
+        <binary_operator> ::= 
+            "+" | "-" | "*" | "/" | "%"
+            | "and" | "or" | "==" | "!=" 
+            | "<" | "<=" | ">" | ">="
+    */
+
+    /*
+        <function_call> ::= IDENTIFIER "(" [ <expression> ( "," <expression> )* [ "," ] ] ")"
+    */
+
+    /*
+        <unaryexpression> ::= <unary_operator>* ( <function_call> | CONSTANT | IDENTIFIER )
+        <expression> ::= <unaryexpression> [ <binary_operator> <expression> ]*
+    */
+
+    /*
+        <loop> ::= <for_loop> | <while_loop>
+    */
+
+    /*
+        <branch> ::= <expression> ":" <indent> (<statement>)* <dedent>
+        <conditional> ::= "if" <branch> ( "else" "if" <branch> )* [ "else" <branch> ]
+    */
+
+    /*
+        <assignment> ::= [ "mut" ] IDENTIFIER ( "," [ "mut" ] IDENTIFIER )* "=" <expression>
+    */
+
+    /*
+        <statement> ::= <expression> 
+            | <assignment> 
+            | <conditional> 
+            | <loop> 
+            | <function> 
+            | <datatype>
+    */
+
+    /*
+        <function_body> ::= <statement>* [ <function_return> ]
+    */
+    let function_body = statement()
+        .repeated()
+        .collect::<Vec<lang_ast::Statement>>();
+
+    /*
+        <param> ::= IDENTIFIER [ ":" <type> ]
+        <param_list> ::= "(" [ <param> ( "," <param> )* [ "," ] ] ")"
+    */
+
+    /*
+        <function_decl> ::= "fn" IDENTIFIER <param_list> "->" <type> ":"
+    */
+    let function_decl = just(lang_token::Function)
+        .ignore_then(parameter()
+            .repeated()
+            .delimited_by(just('('), just(')')))
+        .map(lang_ast::FunctionDecl {
+
+        })
+
+    /*
+        <function> ::= <function_decl> <indent> <function_body> <dedent>
+    */
+    let function = function_decl()
+        .then(function_body())
+        .map(|decl, body| lang_ast::Function {
+            function_decl: decl,
+            body: body,
+        });
+
     any()
         .map(|s| {
             lang_ast::AST {
@@ -29,7 +116,7 @@ where
                     body: vec![],
                 }
             }
-        }).boxed()
+        })
 }
 /*
 pub fn parse (tokens: &Vec<Token>) -> ParserArtifacts {

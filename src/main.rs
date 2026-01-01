@@ -8,6 +8,10 @@ use crate::lexer::{lang_lexer, lang_token};
 use crate::parser::{lang_parser};
 use crate::compiler::{lang_compiler};
 use crate::vm::{lang_vm};
+use chumsky::{
+    input::{Stream, ValueInput},
+    prelude::*,
+};
 
 use std::fs;
 use chumsky::Parser;
@@ -30,11 +34,14 @@ fn main () {
     */
     let tokens = lang_lexer::tokenize(&code);
 
+    let token_stream = Stream::from_iter(tokens.clone().into_iter());
+
     for token in tokens {
         println!("{:?}", token);
     }
     
-    lang_parser::parser().parse(tokens);
+    lang_parser::parser().parse(token_stream);
+
     /*
         Parse tokens
     
