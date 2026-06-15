@@ -1,5 +1,5 @@
-use crate::ast::Node;
-use crate::parser::token_stream::TokenStream;
+use crate::frontend::ast::Node;
+use crate::frontend::parser::token_stream::TokenStream;
 use logos::Span;
 
 pub fn create_node<T>(

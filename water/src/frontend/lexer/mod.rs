@@ -1,6 +1,6 @@
 pub mod token;
 
-use crate::lexer::token::Token;
+use crate::frontend::lexer::token::Token;
 use logos::{Logos, Span};
 
 #[derive(Debug, PartialEq, Clone, Default)]

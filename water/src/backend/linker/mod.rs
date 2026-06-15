@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
-use crate::bytecode::{CompiledFunction, Instruction, Opcode, Program};
-use crate::codegen::CompiledModule;
+use crate::backend::bytecode::{CompiledFunction, Instruction, Opcode, Program};
+use crate::backend::codegen::CompiledModule;
 
 pub fn link(modules: Vec<(String, CompiledModule)>) -> Program {
     let n = modules.len();

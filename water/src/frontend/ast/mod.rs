@@ -2,7 +2,7 @@ pub mod display;
 
 use logos::Span;
 
-use crate::parser::ParsingError;
+use crate::frontend::parser::ParsingError;
 
 #[derive(Debug, Clone)]
 pub struct Node<T> {
@@ -141,6 +141,14 @@ impl Node<Expression> {
                 }
             }
 
+            Expression::Typed { expr, ty } => {
+                let inner = expr.as_ref().clone().into_pattern()?;
+                Pattern::Typed {
+                    pattern: Box::new(inner),
+                    ty: *ty,
+                }
+            }
+
             _ => {
                 return Err(ParsingError::new(
                     "Invalid assignment target",
@@ -202,9 +210,8 @@ pub struct FunctionSignature {
 pub enum Type {
     Named(String),
 
-    Tuple(Vec<TypeNode>),
-
-    Array(Box<TypeNode>),
+    // Generic type application: Array[int], Map[str, int], Option[bool], etc.
+    Generic { base: Box<TypeNode>, args: Vec<TypeNode> },
 
     Function {
         params: Vec<TypeNode>,

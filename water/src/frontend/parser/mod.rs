@@ -2,9 +2,9 @@ mod pratt;
 mod token_stream;
 mod utility;
 
-use crate::ast::{Module, Statement, ImportItem};
-use crate::lexer::token::Token;
-use crate::parser::token_stream::TokenStream;
+use crate::frontend::ast::{Module, Statement, ImportItem};
+use crate::frontend::lexer::token::Token;
+use crate::frontend::parser::token_stream::TokenStream;
 use logos::Span;
 
 pub struct ParsingArtifacts {

@@ -1,36 +1,37 @@
-use crate::ast::{BinaryOp, Expression, Node, Statement, Type};
-use crate::ast::{FunctionSignature, UnaryOp};
-use crate::lexer::token::{self, Token};
-use crate::parser::token_stream::TokenStream;
-use crate::parser::utility::{create_node, span_from_to, span_from_to_node};
-use crate::parser::{parse_statement, ParsingError};
+use crate::frontend::ast::{BinaryOp, Expression, Node, Statement, Type};
+use crate::frontend::ast::{FunctionSignature, UnaryOp};
+use crate::frontend::lexer::token::{self, Token};
+use crate::frontend::parser::token_stream::TokenStream;
+use crate::frontend::parser::utility::{create_node, span_from_to, span_from_to_node};
+use crate::frontend::parser::{parse_statement, ParsingError};
 use logos::Span;
 
 pub fn parse_type(
     token_stream: &mut TokenStream,
 ) -> Result<Node<Type>, ParsingError> {
-    match token_stream.peek() {
+    match token_stream.next() {
         Some((Token::Identifier(name), span)) => {
-            Ok(create_node(token_stream, span, Type::Named(name)))
-        }
-        Some((Token::LParen, start_span)) => {
-            let mut tuple = Vec::new();
-
-            tuple.push(parse_type(token_stream)?);
-
-            while matches!(token_stream.peek(), Some((Token::Comma, _))) {
-                token_stream.next();
-                tuple.push(parse_type(token_stream)?);
+            let base = create_node(token_stream, span.clone(), Type::Named(name));
+            if matches!(token_stream.peek(), Some((Token::LBracket, _))) {
+                token_stream.next(); // consume '['
+                let mut args = Vec::new();
+                args.push(parse_type(token_stream)?);
+                while matches!(token_stream.peek(), Some((Token::Comma, _))) {
+                    token_stream.next();
+                    args.push(parse_type(token_stream)?);
+                }
+                let end_span = match token_stream.next() {
+                    Some((Token::RBracket, s)) => s,
+                    _ => return Err(ParsingError::new("Expected ']' in generic type", None)),
+                };
+                let full_span = span_from_to(span, end_span);
+                Ok(create_node(token_stream, full_span, Type::Generic {
+                    base: Box::new(base),
+                    args,
+                }))
+            } else {
+                Ok(base)
             }
-
-            let end_span = match token_stream.next() {
-                Some((Token::RParen, span)) => span,
-                _ => return Err(ParsingError::new("Expected ')'", None)),
-            };
-
-            let span = span_from_to(start_span, end_span);
-
-            Ok(create_node(token_stream, span, Type::Tuple(tuple)))
         }
         Some((_, span)) => {
             Err(ParsingError::new("Unexpected token", Some(span)))
@@ -336,6 +337,20 @@ fn parse_infix(
     }
 
     token_stream.next(); // consume operator
+
+    if matches!(bin_op, BinaryOp::TypeAnnotation) {
+        let ty = parse_type(token_stream)?;
+        let span = span_from_to(lhs.span.clone(), ty.span.clone());
+        return Ok(Some(create_node(
+            token_stream,
+            span,
+            Expression::Typed {
+                expr: Box::new(lhs.clone()),
+                ty: Box::new(ty),
+            },
+        )));
+    }
+
     let rhs = parse_expression(token_stream, right_bp)?;
     let span = span_from_to_node(lhs, &rhs);
 
@@ -533,7 +548,25 @@ fn parse_lambda_after_paren(
 ) -> Result<Node<Expression>, ParsingError> {
     token_stream.next(); // consume =>
 
-    let return_type = create_node(token_stream, start_span.clone(), Type::Dynamic);//parse_type(token_stream)?;
+    // Detect optional return type: `=> Type\n    block_body`.
+    // Only confirmed when the type token is immediately followed by newline then indent,
+    // avoiding ambiguity with inline bodies like `=> x` or `=> foo + 1`.
+    token_stream.save_pos();
+    let return_type = match parse_type(token_stream) {
+        Ok(ty) if matches!(token_stream.peek(), Some((Token::Newline, _))) => {
+            token_stream.next(); // consume the newline
+            if matches!(token_stream.peek(), Some((Token::Indent, _))) {
+                ty // confirmed: return type annotation with indented body following
+            } else {
+                token_stream.backtrack();
+                create_node(token_stream, start_span.clone(), Type::Dynamic)
+            }
+        }
+        _ => {
+            token_stream.backtrack();
+            create_node(token_stream, start_span.clone(), Type::Dynamic)
+        }
+    };
 
     token_stream.skip_newlines();
     let body = if let Some((Token::Indent, _)) = token_stream.peek() {
@@ -553,10 +586,7 @@ fn parse_lambda_after_paren(
             vec![params_expr.into_pattern()?]
         }
         _ => {
-            return Err(ParsingError::new(
-                "Invalid lambda parameter list",
-                Some(params_expr.span),
-            ));
+            vec![params_expr.into_pattern()?]
         }
     };
 

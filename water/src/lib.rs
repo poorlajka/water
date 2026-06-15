@@ -1,11 +1,5 @@
-pub mod ast;
-pub mod lexer;
-pub mod parser;
-pub mod diagnostics;
-pub mod codegen;
-pub mod bytecode;
-pub mod vm;
-pub mod linker;
+pub mod frontend;
+pub mod backend;
 
 use std::collections::HashSet;
 use std::fs;
@@ -14,9 +8,9 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::io::Write;
 
-use crate::ast::{Module, Statement};
-use crate::codegen::CompiledModule;
-use crate::bytecode::Program;
+use crate::frontend::ast::{Module, Statement};
+use crate::backend::codegen::CompiledModule;
+use crate::backend::bytecode::Program;
 
 struct CapturingWriter(Rc<RefCell<Vec<u8>>>);
 
@@ -29,13 +23,12 @@ impl Write for CapturingWriter {
 }
 
 fn compile_source(source: &str, base_dir: Option<&Path>) -> Program {
-    let asts = parse_all_modules(source, base_dir);
-
-    let bytecode_modules: Vec<(String, CompiledModule)> = asts.into_iter()
-        .map(|(path, ast)| (path, codegen::compile_module_from_ast(&ast)))
+    let modules = parse_all_modules(source, base_dir);
+    let _type_map = frontend::type_checker::check(&modules);
+    let bytecode_modules: Vec<(String, CompiledModule)> = modules.into_iter()
+        .map(|(path, ast)| (path, backend::codegen::compile_module_from_ast(&ast)))
         .collect();
-
-    linker::link(bytecode_modules)
+    backend::linker::link(bytecode_modules)
 }
 
 fn parse_all_modules(source: &str, base_dir: Option<&Path>) -> Vec<(String, Module)> {
@@ -77,8 +70,8 @@ fn parse_module_deps(
 }
 
 fn parse_module(source: &str, name: &str) -> Module {
-    let lexer::LexingArtifacts { tokens, .. } = lexer::tokenize(source);
-    parser::parse_module(&tokens, &name.to_string()).ast
+    let frontend::lexer::LexingArtifacts { tokens, .. } = frontend::lexer::tokenize(source);
+    frontend::parser::parse_module(&tokens, &name.to_string()).ast
 }
 
 fn module_file_path(path: &str, base_dir: Option<&Path>) -> PathBuf {
@@ -95,7 +88,7 @@ pub fn run_capturing_with_dir(source: &str, base_dir: Option<&Path>) -> String {
     let buf = Rc::new(RefCell::new(Vec::new()));
     let writer = CapturingWriter(buf.clone());
     let program = compile_source(source, base_dir);
-    vm::exec_with(&program, Box::new(writer));
+    backend::vm::exec_with(&program, Box::new(writer));
     String::from_utf8(Rc::try_unwrap(buf).unwrap().into_inner()).unwrap()
 }
 
@@ -107,5 +100,5 @@ pub fn run_program(program_path: &str) {
 
     let base_dir = Path::new(program_path).parent();
     let program = compile_source(&source, base_dir);
-    vm::exec(&program);
+    backend::vm::exec(&program);
 }

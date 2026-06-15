@@ -1,6 +1,6 @@
 pub mod heap;
-use crate::bytecode::{Instruction, CompiledFunction, Opcode, Program};
-use crate::bytecode::value::{tag_int, untag_int, is_int, is_bool, untag_bool, tag_bool, tag_pointer, untag_pointer, is_pointer, Value};
+use crate::backend::bytecode::{Instruction, CompiledFunction, Opcode, Program};
+use crate::backend::bytecode::value::{tag_int, untag_int, is_int, is_bool, untag_bool, tag_bool, tag_pointer, untag_pointer, is_pointer, Value};
 use heap::{Heap, ObjectKind};
 use std::io::{self, Write};
 

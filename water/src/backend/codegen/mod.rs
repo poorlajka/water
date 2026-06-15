@@ -1,6 +1,6 @@
-use crate::ast::{Expression, Node, Pattern, FunctionSignature, Module, Statement, BinaryOp, UnaryOp};
-use crate::bytecode::{Instruction, CompiledFunction, Opcode};
-use crate::bytecode::value::{tag_int, tag_bool};
+use crate::frontend::ast::{Expression, Node, Pattern, FunctionSignature, Module, Statement, BinaryOp, UnaryOp};
+use crate::backend::bytecode::{Instruction, CompiledFunction, Opcode};
+use crate::backend::bytecode::value::{tag_int, tag_bool};
 
 use std::collections::HashMap;
 
@@ -146,12 +146,17 @@ impl Compiler {
 
         let local_fn_idx = self.functions.len(); // assigned before push
         for (i, arg) in signature.args.iter().enumerate() {
-            match &arg.kind {
-                Pattern::Identifier(ident) => {
-                    let reg = symbol_table.register_variable(ident);
-                    bytecode.push(Instruction::mov(reg, i+1))
-                }
-                _ => {}
+            let ident = match &arg.kind {
+                Pattern::Identifier(ident) => Some(ident),
+                Pattern::Typed { pattern, .. } => match &pattern.kind {
+                    Pattern::Identifier(ident) => Some(ident),
+                    _ => None,
+                },
+                _ => None,
+            };
+            if let Some(ident) = ident {
+                let reg = symbol_table.register_variable(ident);
+                bytecode.push(Instruction::mov(reg, i + 1));
             }
         }
 
@@ -220,6 +225,10 @@ impl Compiler {
     fn compile_assignment (&mut self, lhs: &Pattern, rhs: &Expression, symbol_table: &mut SymbolTable)
     -> (Vec<Instruction>, usize) {
         let mut bytecode = Vec::new();
+
+        if let Pattern::Typed { pattern, .. } = lhs {
+            return self.compile_assignment(&pattern.kind, rhs, symbol_table);
+        }
 
         if let Pattern::Index { target, index } = lhs {
             let (mut target_code, arr_reg) = self.compile_index_target(&target.kind, symbol_table);
@@ -364,6 +373,9 @@ impl Compiler {
                     }
                 }
                 (Vec::new(), 0)
+            }
+            Expression::Typed { expr, .. } => {
+                self.compile_expression(&expr.kind, symbol_table)
             }
             _ => {
                 (Vec::new(), 0)

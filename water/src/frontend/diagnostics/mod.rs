@@ -1,4 +1,3 @@
-pub mod emitter;
 
 use logos::Span;
 use std::fmt;

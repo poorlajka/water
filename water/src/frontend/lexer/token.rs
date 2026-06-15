@@ -1,4 +1,4 @@
-use crate::lexer::LexingError;
+use crate::frontend::lexer::LexingError;
 use logos::Logos;
 
 /*

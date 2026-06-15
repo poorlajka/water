@@ -1,4 +1,4 @@
-use crate::ast::{Expression, Module, Pattern, Statement};
+use crate::frontend::ast::{Expression, Module, Pattern, Statement};
 
 pub fn print_ast(module: &Module) {
     println!("\nModule: {}", module.name);

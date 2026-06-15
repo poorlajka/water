@@ -1,5 +1,5 @@
-use crate::lexer::token::Token;
-use crate::parser::ParsingError;
+use crate::frontend::lexer::token::Token;
+use crate::frontend::parser::ParsingError;
 use logos::Span;
 
 pub struct TokenStream {

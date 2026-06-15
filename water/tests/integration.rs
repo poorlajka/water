@@ -379,6 +379,56 @@ fn array_3d_read_write() {
     "}), "3\n99\n");
 }
 
+// -- type annotations --
+
+#[test]
+fn type_annotation_variable() {
+    assert_eq!(run_capturing("x: int = 42\nprintln(x)"), "42\n");
+}
+
+#[test]
+fn type_annotation_function_param() {
+    assert_eq!(run_capturing(indoc! {"
+        add = (a: int, b: int) => a + b
+        println(add(3, 4))
+    "}), "7\n");
+}
+
+#[test]
+fn type_annotation_generic() {
+    assert_eq!(run_capturing(indoc! {"
+        f = (a: Array[int]) => Array[int]
+            return a
+        x = [1, 2, 3]
+        println(f(x)[0])
+    "}), "1\n");
+}
+
+#[test]
+fn type_annotation_return_type() {
+    assert_eq!(run_capturing(indoc! {"
+        add = (a: int, b: int) => int
+            return a + b
+        println(add(3, 4))
+    "}), "7\n");
+}
+
+#[test]
+fn type_annotation_return_type_does_not_break_inline() {
+    assert_eq!(run_capturing(indoc! {"
+        identity = (x) => x
+        println(identity(42))
+    "}), "42\n");
+}
+
+#[test]
+fn type_annotation_mixed_params() {
+    assert_eq!(run_capturing(indoc! {"
+        f = (x: int, y) => x + y
+        println(f(10, 5))
+    "}), "15\n");
+}
+
 // -- functions --
 
 #[test]
