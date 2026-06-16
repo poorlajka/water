@@ -1,6 +1,31 @@
 use indoc::indoc;
 use std::fs;
-use water::{run_capturing, run_capturing_with_dir};
+use std::io::Write;
+use std::path::Path;
+use std::rc::Rc;
+use std::cell::RefCell;
+
+struct CapturingWriter(Rc<RefCell<Vec<u8>>>);
+
+impl Write for CapturingWriter {
+    fn write(&mut self, buf: &[u8]) -> std::io::Result<usize> {
+        self.0.borrow_mut().extend_from_slice(buf);
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> std::io::Result<()> { Ok(()) }
+}
+
+fn run_capturing(source: &str) -> String {
+    run_capturing_with_dir(source, None)
+}
+
+fn run_capturing_with_dir(source: &str, base_dir: Option<&Path>) -> String {
+    let buf = Rc::new(RefCell::new(Vec::new()));
+    let writer = CapturingWriter(buf.clone());
+    let program = water::backend::compile(water::frontend::compile(source, base_dir));
+    water::backend::vm::exec_with(&program, Box::new(writer));
+    String::from_utf8(Rc::try_unwrap(buf).unwrap().into_inner()).unwrap()
+}
 
 fn write_module(dir: &tempfile::TempDir, name: &str, source: &str) {
     fs::write(dir.path().join(format!("{}.water", name)), source).unwrap();
